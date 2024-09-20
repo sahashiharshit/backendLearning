@@ -1,19 +1,42 @@
-import http from "http";
+const http = require("http");
+const fs = require("fs");
 
-const app = http.createServer((req, res) => {
+const app = http.createServer((req,res)=>{
     const url = req.url;
-    if(url ==='/home'){
-        res.setHeader('Content-type','text/html');
-        res.write('<html><head><title>Home</title></head><body><h1>Welcome Home</h1></body></html>')
-        res.end();
-    }else if(url==='/about'){
-        res.setHeader('Content-type','text/html');
-        res.write('<html><head><title>about</title></head><body><h1>Welcome to About Us page</h1></body></html>')
-        res.end();
-    }else if(url ==='/node'){
-        res.setHeader('Content-type','text/html');
-        res.write('<html><head><title>Node</title></head><body><h1>Welcome to my Node Js project</h1></body></html>')
-        res.end();
+    const method = req.method;
+  
+    if(url==='/'){
+        let readingData='';
+        fs.readFile('message.txt',(err,data)=>{
+            if(err){
+                return console.error(err);
+            }
+            readingData=data.toString();
+            res.write("<html>");
+            res.write("<head><title>Enter Message</title></head>");
+            res.write(
+              `<body><h1>${readingData}</h1><form action="/message" method="POST"><input type="text" name="message"><br/><button>Submit</button></form></body></html>`
+            );
+            res.end();
+        });
+      
+        
     }
+    if(url==='/message' && method==='POST'){
+        const body =[];
+        req.on('data',(chunk=>{
+            body.push(chunk);
+        }));
+        req.on('end',()=>{
+            const parseBody = Buffer.concat(body).toString();
+            const message = parseBody.split('=')[1];
+            fs.writeFile("message.txt",message,(err)=>{
+                res.statusCode=302;
+                res.setHeader("Location","/");
+                return res.end();
+            });
+        });
+    }
+    
 });
-app.listen(4000);
+app.listen(8000);
